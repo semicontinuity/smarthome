@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Smart home</title>
+        <style type="text/css" media="screen">@import "themes/css/apple.css";</style>
+        <script src="js/zepto.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/jqtouch.min.js" type="text/javascript" charset="utf-8"></script>
+
+
+        <script type="text/javascript" charset="utf-8">
+            var jQT = new $.jQTouch({
+                icon: 'jqtouch.png',
+                addGlossToIcon: false,
+                startupScreen: 'jqt_startup.png',
+                statusBar: 'black',
+                preloadImages: [
+                    'themes/jqt/img/back_button.png',
+                    'themes/jqt/img/back_button_clicked.png',
+                    'themes/jqt/img/button_clicked.png',
+                    'themes/jqt/img/grayButton.png',
+                    'themes/jqt/img/whiteButton.png',
+                    'themes/jqt/img/loading.gif'
+                    ]
+            });
+
+            objects = {
+                'roller-shutters': function() {                    
+
+                    var element;
+
+                    function newChild(id) {
+                        var id = id;
+                        var path = "ws://" + window.document.location.host + '/r/' + id;
+                        return function() {
+                            var ws;
+                            function send(value) {
+                                ws.send(value);
+                            }
+                            return {
+                                activate: function(active) {
+                                    if (active) {
+                                        ws = new WebSocket(path);
+                                        ws.onopen = function() {
+                                            console.log("Opened");
+                                            send('');
+                                        };
+                                        ws.onmessage = function (evt) {
+                                            element.children('ul')[id].children[0].className = (evt.data == '1') ? "on" : "";
+                                            element.children('ul')[id].children[2].className = (evt.data == '2') ? "on" : "";
+                                        };
+                                        ws.onerror = function (evt) {console.log(evt);};
+                                    }
+                                    else {
+                                        ws.close();
+                                    }
+                                },
+                                send: send
+                            }
+                        }();
+                    }
+
+                    var children = {'0':newChild('0'), '1':newChild('1')};
+
+                    return {
+                        children: children,
+                        init: function() {
+                            element = $('#roller-shutters');
+                            element.bind('pageAnimationStart', function(e, info){
+                                for (var key in children) children[key].activate(!info.back);
+                            });
+                        }
+                    }
+                }()
+            };
+
+            $(function(){
+                objects['roller-shutters'].init();
+            });
+        </script>
+
+
+    <style type="text/css" media="screen">
+        #jqt ul li.on a.active small{
+          background: #008040;
+        }
+        #jqt ul li.on small {
+          background: #00FF00;
+          z-index: 10;
+          -webkit-border-radius: 3px;
+          border-radius: 3px;
+          display: block;
+          width: auto;
+        }
+    </style>
+
+    </head>
+
+    <body>
+        <div id="jqt">
+            <div id="main">
+                <div class="toolbar">
+                    <h1>Smart home</h1>
+                </div>
+                <ul class="edgetoedge">
+                    <li class="arrow"><a href="#roller-shutters">Roller shutters</a></li>
+                </ul>
+            </div>
+            <div id="roller-shutters">
+                <div class="toolbar">
+                    <h1>Roller shutters</h2>
+                    <a href="#" class="back">Back</a>
+                </div>
+
+                <h2>Room 1</h2>
+                <ul style="margin-top: 10px;" class="rounded">
+                    <li><a href="#" onclick="objects['roller-shutters'].children['0'].send(1)">Up<small class="counter">&nbsp;</small></a></li>
+                    <li><a href="#" onclick="objects['roller-shutters'].children['0'].send(0)">Stop</a></li>
+                    <li><a href="#" onclick="objects['roller-shutters'].children['0'].send(2)">Down<small class="counter">&nbsp;</small></a></li>
+                </ul>
+
+                <h2>Room 2</h2>
+                <ul style="margin-top: 10px;" class="rounded">
+                    <li><a href="#" onclick="objects['roller-shutters'].children['1'].send(1)">Up<small class="counter">&nbsp;</small></a></li>
+                    <li><a href="#" onclick="objects['roller-shutters'].children['1'].send(0)">Stop</a></li>
+                    <li><a href="#" onclick="objects['roller-shutters'].children['1'].send(2)">Down<small class="counter">&nbsp;</small></a></li>
+                </ul>
+            </div>
+        </div>
+    </body>
+</html>
