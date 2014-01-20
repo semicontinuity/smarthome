@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Smart home</title>
+    <style type="text/css" media="screen">@import "themes/css/apple.css";</style>
+    <!--<style type="text/css" media="screen">@import "themes/css/jqtouch.css";</style>-->
+    <script src="js/zepto.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/jqtouch.min.js" type="text/javascript" charset="utf-8"></script>
+
+
+    <script type="text/javascript" charset="utf-8">
+        //noinspection JSPotentiallyInvalidConstructorUsage
+        var jQT = new $.jQTouch({
+            icon: 'jqtouch.png',
+            addGlossToIcon: false,
+            startupScreen: 'jqt_startup.png',
+            statusBar: 'black',
+            preloadImages: [
+                'themes/jqt/img/back_button.png',
+                'themes/jqt/img/back_button_clicked.png',
+                'themes/jqt/img/button_clicked.png',
+                'themes/jqt/img/grayButton.png',
+                'themes/jqt/img/whiteButton.png',
+                'themes/jqt/img/loading.gif'
+            ]
+        });
+
+        objects = {
+            'roller-shutters': function() {
+
+                var element;
+
+                function newChild(id) {
+//                    var id = id;
+                    var path = "ws://" + window.document.location.host + '/r/' + id;
+                    return function() {
+                        var ws;
+                        function send(value) {
+                            ws.send(value);
+                        }
+                        return {
+                            activate: function(active) {
+                                if (active) {
+                                    ws = new WebSocket(path);
+                                    ws.onopen = function() {
+                                        console.log("Opened");
+                                        send('');
+                                    };
+                                    ws.onmessage = function (evt) {
+                                        element.children('ul')[id].children[0].className = (evt.data == '1') ? "on" : "";
+                                        element.children('ul')[id].children[2].className = (evt.data == '2') ? "on" : "";
+                                    };
+                                    ws.onerror = function (evt) {console.log(evt);};
+                                }
+                                else {
+                                    ws.close();
+                                }
+                            },
+                            send: send
+                        }
+                    }();
+                }
+
+                var children = {'0':newChild('0'), '1':newChild('1')};
+
+                return {
+                    children: children,
+                    init: function() {
+                        element = $('#roller-shutters');
+                        element.bind('pageAnimationStart', function(e, info){
+                            for (var key in children) {
+                                if (children.hasOwnProperty(key)) {
+                                    children[key].activate(!info.back);
+                                }
+                            }
+                        });
+                    }
+                }
+            }()
+        };
+
+        $(function(){
+            objects['roller-shutters'].init();
+        });
+    </script>
+
+
+    <style type="text/css" media="screen">
+        #jqt ul li a small.indicator{
+            color: #005911;
+            font-size: 28px;
+            font-weight: bold;
+            line-height: 20px;
+        }
+    </style>
+
+</head>
+
+<body>
+<div id="jqt">
+    <div id="temperature">
+        <div class="toolbar">
+            <h1>Temperature</h1>
+        </div>
+        <ul class="edgetoedge">
+            <li class="arrow"><a href="#obj_1">Room 1 <small class="indicator">21.1</small></a></li>
+            <li class="arrow"><a href="#obj_2">Room 2 <small class="indicator">22.2</small></a></li>
+            <li class="arrow"><a href="#obj_3">Room 3 <small class="indicator">23.3</small></a></li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>
